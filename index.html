@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>מחשבון עלות נסיעה</title>
+<style>
+  :root{
+    --bg:#10142a;
+    --card:#181d38;
+    --card2:#212850;
+    --accent:#6c8bff;
+    --accent2:#4ade80;
+    --text:#eef0fa;
+    --muted:#9aa3c7;
+    --danger:#ff6b6b;
+    --border:#2c3363;
+  }
+  :root[data-theme="light"]{
+    --bg:#f3f5fc;
+    --card:#ffffff;
+    --card2:#eef1fb;
+    --accent:#3366e6;
+    --accent2:#12a06a;
+    --text:#1a1f3a;
+    --muted:#666f97;
+    --danger:#e0334f;
+    --border:#dde2f5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Arial, Tahoma, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    direction:rtl;
+    padding-bottom:40px;
+    transition:background .2s, color .2s;
+  }
+  header{
+    position:sticky; top:0; z-index:20;
+    background:var(--card);
+    border-bottom:1px solid var(--border);
+    padding:14px 16px;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  header h1{ font-size:17px; margin:0; }
+  .tabbtn{
+    background:var(--card2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:8px 12px; font-size:14px; cursor:pointer;
+  }
+  .tabbtn.active{ background:var(--accent); color:#fff; font-weight:bold; border-color:var(--accent); }
+  #themeToggle{ font-size:16px; padding:8px 10px; }
+  main{ max-width:640px; margin:0 auto; padding:16px; }
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:16px; margin-bottom:16px;
+  }
+  .card h2{ margin:0 0 12px; font-size:16px; color:var(--accent); }
+  label{ display:block; font-size:14px; color:var(--muted); margin:10px 0 4px; }
+  input[type=text], input[type=number]{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--card2); color:var(--text); font-size:16px;
+  }
+  input:focus{ outline:2px solid var(--accent); }
+  .row{ display:flex; gap:10px; }
+  .row > *{ flex:1; }
+  button.btn{
+    background:var(--accent); color:#fff; border:none; border-radius:10px;
+    padding:11px 16px; font-size:15px; font-weight:bold; cursor:pointer; margin-top:8px;
+  }
+  button.btn.secondary{ background:var(--card2); color:var(--text); border:1px solid var(--border); }
+  button.btn.danger{ background:transparent; color:var(--danger); border:1px solid var(--danger); padding:6px 10px; font-size:13px; }
+  button.btn.small{ padding:6px 10px; font-size:13px; }
+  button.btn.ghost{ background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  .list-item{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:var(--card2); border:1px solid var(--border); border-radius:10px;
+    padding:8px 10px; margin-bottom:8px; font-size:14px; flex-wrap:wrap;
+  }
+  .list-item.active{ border-color:var(--accent2); box-shadow:0 0 0 1px var(--accent2) inset; }
+  .list-item .actions{ display:flex; gap:6px; }
+  .badge-active{ background:var(--accent2); color:#08331f; font-size:11px; font-weight:bold; padding:3px 8px; border-radius:999px; }
+
+  .addr-field .row{ align-items:stretch; }
+  .addr-field input[type=text]{ flex:1; }
+  .icon-btn{
+    flex:0 0 auto; width:42px; height:42px; margin-top:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--card2); border:1px solid var(--border); border-radius:10px;
+    color:var(--text); font-size:17px; cursor:pointer; padding:0;
+  }
+  .icon-btn.listening{ background:var(--danger); color:#fff; animation:pulse 1s infinite; }
+  @keyframes pulse{ 0%{opacity:1;} 50%{opacity:.55;} 100%{opacity:1;} }
+
+  .stop-row{ margin-bottom:14px; padding-bottom:10px; border-bottom:1px dashed var(--border); }
+  .stop-row:last-child{ border-bottom:none; }
+
+  .muted{ color:var(--muted); font-size:13px; }
+  select{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--card2); color:var(--text); font-size:15px;
+  }
+  #map{ width:100%; height:260px; border-radius:12px; margin-top:12px; border:1px solid var(--border); }
+  .result-box{
+    text-align:center; padding:22px 18px; background:linear-gradient(180deg,var(--card2),var(--card));
+    border:1px solid var(--accent); border-radius:16px; margin-top:14px;
+  }
+  .result-box .amount{ font-size:48px; font-weight:800; color:var(--accent2); direction:ltr; display:inline-block; }
+  .result-box .sub{ margin-top:10px; color:var(--muted); font-size:14px; }
+  .err{ color:var(--danger); font-size:14px; margin-top:8px; }
+  .place-picker{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .place-chip{
+    background:var(--card2); border:1px solid var(--border); border-radius:999px;
+    padding:5px 12px; font-size:13px; cursor:pointer;
+  }
+  .place-chip:hover{ border-color:var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚗 מחשבון נסיעה</h1>
+  <div style="display:flex;gap:6px;">
+    <button class="tabbtn active" id="tabTrip" onclick="showScreen('trip')">נסיעה</button>
+    <button class="tabbtn" id="tabSettings" onclick="showScreen('settings')">⚙️ הגדרות</button>
+    <button class="tabbtn" id="themeToggle" onclick="toggleTheme()">🌙</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===================== מסך נסיעה ===================== -->
+  <section id="screenTrip" class="screen active">
+
+    <div class="muted" style="margin-bottom:10px;">💡 טיפ: כדי להכתיב כתובת בקול, תלחץ על שדה הכתובת ואז על סמל המיקרופון שעל גבי המקלדת של הטלפון (לא כפתור בתוך האפליקציה).</div>
+
+    <div class="card addr-field">
+      <h2>נקודת מוצא</h2>
+      <div class="row">
+        <input type="text" id="originInput" placeholder="הקלד כתובת...">
+        <button class="icon-btn" data-save-for="originInput" title="שמור כמקום קבוע">💾</button>
+      </div>
+      <div class="place-picker" data-chips-for="originInput"></div>
+      <button class="btn secondary small" onclick="useMyLocation()">📍 השתמש במיקום שלי</button>
+      <div class="muted" id="originStatus"></div>
+    </div>
+
+    <div class="card addr-field">
+      <h2>יעד</h2>
+      <div class="row">
+        <input type="text" id="destInput" placeholder="הקלד כתובת...">
+        <button class="icon-btn" data-save-for="destInput" title="שמור כמקום קבוע">💾</button>
+      </div>
+      <div class="place-picker" data-chips-for="destInput"></div>
+    </div>
+
+    <div class="card">
+      <h2>נקודות עצירה (אופציונלי)</h2>
+      <div id="stopsContainer"></div>
+      <button class="btn secondary small" onclick="addStopRow()">➕ הוסף נקודת עצירה</button>
+      <div class="muted">הסכום הקבוע (מחיר בסיס) נספר פעם אחת בלבד, גם עם כמה עצירות. הסדר שבו מוזנות העצירות הוא סדר המסלול.</div>
+    </div>
+
+    <button class="btn" style="width:100%;font-size:17px;padding:14px;" onclick="calculateTrip()">חשב מסלול ועלות</button>
+    <button class="btn secondary" style="width:100%;" onclick="resetTripForm()">🧹 נקה הכל / התחל חישוב חדש</button>
+    <button class="btn ghost" style="width:100%;" id="startNavBtn" onclick="startNavigation()">🧭 התחל ניווט ב-Google Maps</button>
+    <div class="err" id="tripError"></div>
+
+    <div id="resultBox" class="result-box" style="display:none;">
+      <div class="amount" id="resultAmount">0 ₪</div>
+      <div class="sub" id="resultSub"></div>
+    </div>
+
+    <div id="map"></div>
+  </section>
+
+  <!-- ===================== מסך הגדרות ===================== -->
+  <section id="screenSettings" class="screen">
+
+    <div class="card">
+      <h2>תעריפים בסיסיים</h2>
+      <label>עלות למרחק (₪ לק"מ)</label>
+      <input type="number" id="setRateKm" step="0.01">
+      <label>עלות לזמן (₪ לדקה)</label>
+      <input type="number" id="setRateMin" step="0.01">
+      <label>מחיר בסיס (סכום קבוע לנסיעה)</label>
+      <input type="number" id="setBase" step="0.5">
+      <button class="btn" onclick="saveBaseSettings()">💾 שמור תעריפים</button>
+      <div class="muted" id="baseSaveMsg"></div>
+    </div>
+
+    <div class="card">
+      <h2>אחוז שינוי פעיל</h2>
+      <div class="muted" style="margin-bottom:10px;">האחוז שנבחר כאן כ"פעיל" יחול אוטומטית על תעריף הק"מ ותעריף הדקה בכל חישוב נסיעה, עד שתשנה אותו כאן שוב. במסך הנסיעה לא יוצג שום אזכור לאחוז — רק הסכום הסופי.</div>
+      <div id="activePercentInfo" class="muted" style="margin-bottom:10px;font-weight:bold;"></div>
+
+      <div id="presetsList"></div>
+      <div class="list-item" id="noneRow" style="cursor:pointer;" onclick="activateNone()">
+        <span>ללא אחוז שינוי (תעריפים רגילים)</span>
+        <span id="noneBadge"></span>
+      </div>
+
+      <label style="margin-top:14px;">הוסף אחוז קבוע חדש</label>
+      <div class="row">
+        <input type="text" id="newPresetName" placeholder="שם (לדוגמה: שעות לילה)">
+        <input type="number" id="newPresetPercent" placeholder="אחוז (למשל 20 או 10-)" step="0.5">
+      </div>
+      <button class="btn secondary" onclick="addPreset()">➕ הוסף</button>
+
+      <label style="margin-top:14px;">אחוז ידני חד-פעמי</label>
+      <div class="row">
+        <input type="number" id="manualPercentInput" placeholder="לדוגמה: 12" step="0.5">
+        <button class="btn ghost" onclick="activateManual()">הפעל אחוז ידני זה</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>מקומות שמורים</h2>
+      <div id="placesList"></div>
+      <div class="row">
+        <input type="text" id="newPlaceName" placeholder="שם (לדוגמה: בית / עבודה)">
+      </div>
+      <input type="text" id="newPlaceAddress" placeholder="כתובת מלאה" style="margin-top:8px;">
+      <button class="btn secondary" onclick="addPlace()">➕ הוסף מקום שמור</button>
+    </div>
+
+    <div class="card">
+      <h2>אפליקציית ניווט מועדפת</h2>
+      <div class="row">
+        <button class="tabbtn" id="navGoogleBtn" style="flex:1;" onclick="setNavApp('google')">Google Maps</button>
+        <button class="tabbtn" id="navWazeBtn" style="flex:1;" onclick="setNavApp('waze')">Waze</button>
+      </div>
+      <div class="muted" style="margin-top:8px;">האפליקציה שתיבחר כאן תיפתח כשתלחץ על "התחל ניווט" במסך הנסיעה. שים לב: ל-Waze אין תמיכה בנקודת מוצא מותאמת או בכמה נקודות עצירה — הוא תמיד מנווט מהמיקום הנוכחי שלך אל היעד הסופי בלבד.</div>
+    </div>
+
+    <div class="card">
+      <h2>מפתח Google Maps API</h2>
+      <div class="muted">המפתח הנוכחי טעון בקובץ ונבדק ועובד. הגדרות אבטחה נוספות (הגבלת המפתח) נבצע יחד בשלב הבא.</div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- ===================== לוגיקה ===================== -->
+<script>
+const STORAGE_KEY = 'tripCalcSettings_v2';
+const THEME_KEY = 'tripCalcTheme';
+
+let settings = loadSettings();
+let map, directionsService, directionsRenderer, geocoder;
+let originPlace = null; // {address, location:{lat,lng}} - only set via autocomplete place / geolocation
+let originIsMyLocation = false; // true only right after "המיקום שלי" was used and not overridden since
+let stopCounter = 0;
+
+function loadSettings(){
+  const def = {
+    rateKm: 2.5,
+    rateMin: 0.8,
+    base: 15,
+    presets: [
+      {id:'night', name:'שעות לילה', percent:20},
+      {id:'rush', name:'שעות עומס', percent:15}
+    ],
+    places: [],
+    activeMode: 'none',      // 'none' | 'preset' | 'manual'
+    activePresetId: null,
+    manualPercent: 0,
+    navApp: 'google'         // 'google' | 'waze'
+  };
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return def;
+    return Object.assign(def, JSON.parse(raw));
+  }catch(e){ return def; }
+}
+function persistSettings(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
+
+/* ---------- ערכת נושא יום/לילה ---------- */
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeToggle').textContent = theme==='light' ? '🌙' : '☀️';
+  localStorage.setItem(THEME_KEY, theme);
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  applyTheme(cur==='dark' ? 'light' : 'dark');
+}
+applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+
+/* ---------- ניווט בין מסכים ---------- */
+function showScreen(name){
+  document.getElementById('screenTrip').classList.toggle('active', name==='trip');
+  document.getElementById('screenSettings').classList.toggle('active', name==='settings');
+  document.getElementById('tabTrip').classList.toggle('active', name==='trip');
+  document.getElementById('tabSettings').classList.toggle('active', name==='settings');
+  if(name==='trip') setTimeout(()=>{ if(map) google.maps.event.trigger(map,'resize'); }, 50);
+}
+
+/* ---------- הגדרות: תעריפים ---------- */
+function fillSettingsForm(){
+  document.getElementById('setRateKm').value = settings.rateKm;
+  document.getElementById('setRateMin').value = settings.rateMin;
+  document.getElementById('setBase').value = settings.base;
+  document.getElementById('manualPercentInput').value = settings.manualPercent || '';
+  renderPresetsList();
+  renderPlacesList();
+  refreshAllPlaceChips();
+  renderNavAppButtons();
+  updateNavButtonLabel();
+}
+function saveBaseSettings(){
+  settings.rateKm = parseFloat(document.getElementById('setRateKm').value) || 0;
+  settings.rateMin = parseFloat(document.getElementById('setRateMin').value) || 0;
+  settings.base = parseFloat(document.getElementById('setBase').value) || 0;
+  persistSettings();
+  const msg = document.getElementById('baseSaveMsg');
+  msg.textContent = 'נשמר ✔';
+  setTimeout(()=>msg.textContent='', 1500);
+}
+
+/* ---------- הגדרות: אחוז שינוי פעיל ---------- */
+function getActivePercent(){
+  if(settings.activeMode === 'manual') return settings.manualPercent || 0;
+  if(settings.activeMode === 'preset'){
+    const p = settings.presets.find(x=>x.id===settings.activePresetId);
+    return p ? p.percent : 0;
+  }
+  return 0;
+}
+function activeLabel(){
+  if(settings.activeMode === 'manual') return `אחוז ידני (${settings.manualPercent}%)`;
+  if(settings.activeMode === 'preset'){
+    const p = settings.presets.find(x=>x.id===settings.activePresetId);
+    return p ? `${p.name} (${p.percent}%)` : 'ללא';
+  }
+  return 'ללא שינוי';
+}
+function activateNone(){
+  settings.activeMode = 'none';
+  settings.activePresetId = null;
+  persistSettings();
+  renderPresetsList();
+}
+function activatePreset(id){
+  settings.activeMode = 'preset';
+  settings.activePresetId = id;
+  persistSettings();
+  renderPresetsList();
+}
+function activateManual(){
+  const val = parseFloat(document.getElementById('manualPercentInput').value);
+  if(isNaN(val)){ alert('נא להזין אחוז תקין'); return; }
+  settings.activeMode = 'manual';
+  settings.manualPercent = val;
+  persistSettings();
+  renderPresetsList();
+}
+function renderPresetsList(){
+  const el = document.getElementById('presetsList');
+  el.innerHTML = '';
+  settings.presets.forEach(p=>{
+    const isActive = settings.activeMode==='preset' && settings.activePresetId===p.id;
+    const div = document.createElement('div');
+    div.className = 'list-item' + (isActive ? ' active' : '');
+    const span = document.createElement('span');
+    span.textContent = `${p.name} — ${p.percent}%`;
+    div.appendChild(span);
+    const actions = document.createElement('span');
+    actions.className = 'actions';
+    if(isActive){
+      const b = document.createElement('span');
+      b.className = 'badge-active'; b.textContent = 'פעיל';
+      actions.appendChild(b);
+    } else {
+      const activateBtn = document.createElement('button');
+      activateBtn.className = 'btn secondary small';
+      activateBtn.textContent = 'הפעל';
+      activateBtn.onclick = ()=>activatePreset(p.id);
+      actions.appendChild(activateBtn);
+    }
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn secondary small';
+    editBtn.textContent = 'ערוך';
+    editBtn.onclick = ()=>editPreset(p.id);
+    actions.appendChild(editBtn);
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn danger';
+    delBtn.textContent = 'מחק';
+    delBtn.onclick = ()=>{
+      settings.presets = settings.presets.filter(x=>x.id!==p.id);
+      if(settings.activePresetId===p.id){ settings.activeMode='none'; settings.activePresetId=null; }
+      persistSettings();
+      renderPresetsList();
+    };
+    actions.appendChild(delBtn);
+    div.appendChild(actions);
+    el.appendChild(div);
+  });
+  document.getElementById('noneRow').classList.toggle('active', settings.activeMode==='none');
+  document.getElementById('noneBadge').innerHTML = settings.activeMode==='none' ? '<span class="badge-active">פעיל</span>' : '';
+  document.getElementById('activePercentInfo').textContent = 'האחוז הפעיל כרגע: ' + activeLabel();
+}
+function editPreset(id){
+  const p = settings.presets.find(x=>x.id===id);
+  if(!p) return;
+  const newName = prompt('שם חדש לאחוז:', p.name);
+  if(newName===null) return;
+  const newPercentStr = prompt('אחוז חדש:', p.percent);
+  if(newPercentStr===null) return;
+  const newPercent = parseFloat(newPercentStr);
+  if(!newName.trim() || isNaN(newPercent)){ alert('נא להזין שם ואחוז תקינים'); return; }
+  p.name = newName.trim();
+  p.percent = newPercent;
+  persistSettings();
+  renderPresetsList();
+}
+function addPreset(){
+  const name = document.getElementById('newPresetName').value.trim();
+  const percent = parseFloat(document.getElementById('newPresetPercent').value);
+  if(!name || isNaN(percent)){ alert('נא למלא שם ואחוז תקין'); return; }
+  settings.presets.push({id:'p'+Date.now(), name, percent});
+  persistSettings();
+  document.getElementById('newPresetName').value='';
+  document.getElementById('newPresetPercent').value='';
+  renderPresetsList();
+}
+
+/* ---------- הגדרות: אפליקציית ניווט מועדפת ---------- */
+function setNavApp(app){
+  settings.navApp = app;
+  persistSettings();
+  renderNavAppButtons();
+  updateNavButtonLabel();
+}
+function renderNavAppButtons(){
+  const gBtn = document.getElementById('navGoogleBtn');
+  const wBtn = document.getElementById('navWazeBtn');
+  if(!gBtn || !wBtn) return;
+  gBtn.classList.toggle('active', settings.navApp==='google');
+  wBtn.classList.toggle('active', settings.navApp==='waze');
+}
+function updateNavButtonLabel(){
+  const btn = document.getElementById('startNavBtn');
+  if(!btn) return;
+  btn.textContent = settings.navApp==='waze' ? '🧭 התחל ניווט ב-Waze' : '🧭 התחל ניווט ב-Google Maps';
+}
+
+/* ---------- הגדרות: מקומות שמורים ---------- */
+function renderPlacesList(){
+  const el = document.getElementById('placesList');
+  el.innerHTML = '';
+  settings.places.forEach(p=>{
+    const div = document.createElement('div');
+    div.className='list-item';
+    div.innerHTML = `<span><b>${p.name}</b> — ${p.address}</span>`;
+    const actions = document.createElement('span');
+    actions.className = 'actions';
+    const editBtn = document.createElement('button');
+    editBtn.className='btn secondary small';
+    editBtn.textContent='ערוך';
+    editBtn.onclick = ()=>editPlace(p.id);
+    actions.appendChild(editBtn);
+    const btn = document.createElement('button');
+    btn.className='btn danger';
+    btn.textContent='מחק';
+    btn.onclick = ()=>{ settings.places = settings.places.filter(x=>x.id!==p.id); persistSettings(); renderPlacesList(); refreshAllPlaceChips(); };
+    actions.appendChild(btn);
+    div.appendChild(actions);
+    el.appendChild(div);
+  });
+}
+function editPlace(id){
+  const p = settings.places.find(x=>x.id===id);
+  if(!p) return;
+  const newName = prompt('שם חדש למקום:', p.name);
+  if(newName===null) return;
+  const newAddress = prompt('כתובת חדשה:', p.address);
+  if(newAddress===null) return;
+  if(!newName.trim() || !newAddress.trim()){ alert('נא להזין שם וכתובת תקינים'); return; }
+  p.name = newName.trim();
+  p.address = newAddress.trim();
+  persistSettings();
+  renderPlacesList();
+  refreshAllPlaceChips();
+}
+function addPlace(){
+  const name = document.getElementById('newPlaceName').value.trim();
+  const address = document.getElementById('newPlaceAddress').value.trim();
+  if(!name || !address){ alert('נא למלא שם וכתובת'); return; }
+  settings.places.push({id:'pl'+Date.now(), name, address});
+  persistSettings();
+  document.getElementById('newPlaceName').value='';
+  document.getElementById('newPlaceAddress').value='';
+  renderPlacesList();
+  refreshAllPlaceChips();
+}
+function savePlaceFromField(inputId){
+  const inputEl = document.getElementById(inputId);
+  const addr = inputEl.value.trim();
+  if(!addr){ alert('אין כתובת בשדה כדי לשמור'); return; }
+  const name = prompt('שם למקום השמור (לדוגמה: בית):', '');
+  if(!name || !name.trim()) return;
+  settings.places.push({id:'pl'+Date.now(), name:name.trim(), address:addr});
+  persistSettings();
+  renderPlacesList();
+  refreshAllPlaceChips();
+}
+function refreshAllPlaceChips(){
+  document.querySelectorAll('[data-chips-for]').forEach(container=>{
+    const targetId = container.getAttribute('data-chips-for');
+    container.innerHTML = '';
+    settings.places.forEach(p=>{
+      const chip = document.createElement('span');
+      chip.className = 'place-chip';
+      chip.textContent = p.name;
+      chip.onclick = ()=>{
+        const inputEl = document.getElementById(targetId);
+        inputEl.value = p.address;
+        if(targetId==='originInput'){ originPlace=null; originIsMyLocation=false; }
+        // no synthetic 'input' event here on purpose: it used to re-trigger the
+        // Places Autocomplete dropdown for an address that's already complete,
+        // leaving a stuck suggestions popup. Just close the keyboard/dropdown.
+        inputEl.blur();
+      };
+      container.appendChild(chip);
+    });
+  });
+}
+
+/* ---------- שדה כתובת: שמירה כמקום קבוע ---------- */
+function attachSaveButton(btnEl){
+  const targetId = btnEl.getAttribute('data-save-for');
+  btnEl.addEventListener('click', ()=>savePlaceFromField(targetId));
+}
+function initAddressFieldExtras(scopeEl){
+  scopeEl.querySelectorAll('[data-save-for]').forEach(attachSaveButton);
+}
+
+/* ---------- נקודות עצירה ---------- */
+function addStopRow(){
+  stopCounter++;
+  const id = 'stop'+stopCounter;
+  const container = document.getElementById('stopsContainer');
+  const row = document.createElement('div');
+  row.className='stop-row addr-field';
+  row.id = 'row_'+id;
+  row.innerHTML = `
+    <div class="row">
+      <input type="text" id="${id}" placeholder="כתובת נקודת עצירה...">
+      <button class="icon-btn" data-save-for="${id}" title="שמור כמקום קבוע">💾</button>
+    </div>
+    <div class="place-picker" data-chips-for="${id}"></div>
+    <button class="btn danger small" style="margin-top:6px;" onclick="document.getElementById('row_${id}').remove()">מחק נקודת עצירה</button>
+  `;
+  container.appendChild(row);
+  initAddressFieldExtras(row);
+  refreshAllPlaceChips();
+  if(window.google && google.maps && google.maps.places){
+    new google.maps.places.Autocomplete(document.getElementById(id), {fields:['formatted_address','geometry']});
+  }
+}
+
+/* ---------- מיקום נוכחי ---------- */
+function useMyLocation(){
+  const status = document.getElementById('originStatus');
+  if(!navigator.geolocation){ status.textContent='הדפדפן לא תומך במיקום.'; return; }
+  status.textContent='מאתר מיקום...';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const loc = {lat:pos.coords.latitude, lng:pos.coords.longitude};
+    originPlace = {address:'המיקום שלי', location:loc};
+    originIsMyLocation = true;
+    document.getElementById('originInput').value = 'המיקום שלי';
+    if(geocoder){
+      geocoder.geocode({location:loc}, (results, st)=>{
+        if(st==='OK' && results[0]){
+          document.getElementById('originInput').value = results[0].formatted_address;
+          originPlace.address = results[0].formatted_address;
+        }
+        status.textContent='מיקום זוהה ✔';
+      });
+    } else {
+      status.textContent='מיקום זוהה ✔';
+    }
+  }, err=>{
+    if(err.code === 1){ // PERMISSION_DENIED
+      status.textContent = 'הדפדפן חסם את הגישה למיקום כי האפליקציה רצה כקובץ מקומי. אפשר להקליד את הכתובת ידנית במקום, או לשאול על אירוח מקוון של הקובץ כדי שזה יעבוד.';
+    } else {
+      status.textContent='לא ניתן היה לאתר מיקום: '+err.message;
+    }
+  }, {enableHighAccuracy:true, timeout:10000});
+}
+
+/* ---------- ניקוי טופס נסיעה ---------- */
+function resetTripForm(){
+  document.getElementById('originInput').value = '';
+  document.getElementById('destInput').value = '';
+  document.getElementById('originStatus').textContent = '';
+  document.getElementById('tripError').textContent = '';
+  document.getElementById('stopsContainer').innerHTML = '';
+  document.getElementById('resultBox').style.display = 'none';
+  originPlace = null;
+  if(directionsRenderer){
+    directionsRenderer.setMap(null);
+    directionsRenderer = new google.maps.DirectionsRenderer({map: map});
+  }
+  if(map){
+    map.setCenter({lat:31.771959, lng:35.217018});
+    map.setZoom(8);
+  }
+}
+
+/* ---------- התחלת ניווט באפליקציה חיצונית ---------- */
+function startNavigation(){
+  const errEl = document.getElementById('tripError');
+  errEl.textContent = '';
+  const destVal = document.getElementById('destInput').value.trim();
+  if(!destVal){ errEl.textContent='נא למלא יעד לפני תחילת ניווט.'; return; }
+
+  const stopInputs = Array.from(document.querySelectorAll('#stopsContainer input[type=text]'));
+  const stops = stopInputs.map(inp=>inp.value.trim()).filter(v=>v);
+
+  if(settings.navApp === 'waze'){
+    const url = 'https://waze.com/ul?q=' + encodeURIComponent(destVal) + '&navigate=yes';
+    window.open(url, '_blank');
+  } else {
+    let url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(destVal) + '&travelmode=driving';
+    if(!originIsMyLocation){
+      const originVal = document.getElementById('originInput').value.trim();
+      if(originVal) url += '&origin=' + encodeURIComponent(originVal);
+    }
+    if(stops.length){
+      url += '&waypoints=' + encodeURIComponent(stops.join('|'));
+    }
+    window.open(url, '_blank');
+  }
+}
+
+/* ---------- חישוב מסלול ועלות ---------- */
+function calculateTrip(){
+  const errEl = document.getElementById('tripError');
+  errEl.textContent = '';
+  const originVal = originPlace ? originPlace.location : document.getElementById('originInput').value.trim();
+  const destVal = document.getElementById('destInput').value.trim();
+  if(!originVal || !destVal){ errEl.textContent='נא למלא נקודת מוצא ויעד.'; return; }
+
+  const stopInputs = Array.from(document.querySelectorAll('#stopsContainer input[type=text]'));
+  const waypoints = stopInputs.map(inp=>inp.value.trim()).filter(v=>v).map(v=>({location:v, stopover:true}));
+
+  directionsService.route({
+    origin: originVal,
+    destination: destVal,
+    waypoints: waypoints,
+    optimizeWaypoints: false,
+    travelMode: google.maps.TravelMode.DRIVING
+  }, (result, status)=>{
+    if(status !== 'OK'){
+      errEl.textContent = 'שגיאה בקבלת מסלול מגוגל מאפס: ' + status;
+      return;
+    }
+    directionsRenderer.setDirections(result);
+
+    let totalMeters = 0, totalSeconds = 0;
+    result.routes[0].legs.forEach(leg=>{
+      totalMeters += leg.distance.value;
+      totalSeconds += leg.duration.value;
+    });
+    const distanceKm = totalMeters/1000;
+    const durationMin = totalSeconds/60;
+
+    const percent = getActivePercent();
+    const effRateKm = settings.rateKm * (1 + percent/100);
+    const effRateMin = settings.rateMin * (1 + percent/100);
+    const cost = distanceKm*effRateKm + durationMin*effRateMin + settings.base;
+
+    document.getElementById('resultAmount').textContent = cost.toFixed(2) + ' ₪';
+    document.getElementById('resultSub').textContent =
+      `מרחק: ${distanceKm.toFixed(1)} ק"מ · זמן נסיעה: ${Math.round(durationMin)} דק'`;
+    document.getElementById('resultBox').style.display='block';
+    document.getElementById('resultBox').scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+}
+
+/* ---------- אתחול גוגל מאפס ---------- */
+function initMap(){
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: {lat:31.771959, lng:35.217018}, // ירושלים כברירת מחדל
+    zoom: 8,
+    disableDefaultUI: true,
+    zoomControl: true
+  });
+  directionsService = new google.maps.DirectionsService();
+  directionsRenderer = new google.maps.DirectionsRenderer({map: map});
+  geocoder = new google.maps.Geocoder();
+
+  const originAC = new google.maps.places.Autocomplete(document.getElementById('originInput'), {fields:['formatted_address','geometry']});
+  originAC.addListener('place_changed', ()=>{
+    const p = originAC.getPlace();
+    originIsMyLocation = false;
+    if(p && p.geometry){
+      originPlace = {address:p.formatted_address, location:{lat:p.geometry.location.lat(), lng:p.geometry.location.lng()}};
+    } else {
+      originPlace = null;
+    }
+  });
+  document.getElementById('originInput').addEventListener('input', ()=>{ originPlace=null; originIsMyLocation=false; });
+
+  new google.maps.places.Autocomplete(document.getElementById('destInput'), {fields:['formatted_address','geometry']});
+
+  initAddressFieldExtras(document);
+  fillSettingsForm();
+}
+function gm_authFailure(){
+  document.getElementById('tripError').textContent = 'שגיאה בטעינת גוגל מאפס — יש לבדוק את תוקף המפתח וההגבלות שלו.';
+}
+window.gm_authFailure = gm_authFailure;
+</script>
+
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAQT7udF6FjwyfPiPCbNyxw1XM4kvYRCtU&libraries=places&language=he&region=IL&callback=initMap">
+</script>
+
+</body>
+</html>
