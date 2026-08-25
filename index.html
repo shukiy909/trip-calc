@@ -188,6 +188,11 @@
       <input type="number" id="setRateMin" step="0.01">
       <label>מחיר בסיס (סכום קבוע לנסיעה)</label>
       <input type="number" id="setBase" step="0.5">
+      <label>תעריף נוסף לכל ק"מ מעל הסף (₪ לק"מ)</label>
+      <input type="number" id="setExtraKmRate" step="0.01">
+      <label>סף מרחק להפעלת התעריף הנוסף (ק"מ)</label>
+      <input type="number" id="setExtraKmThreshold" step="1">
+      <div class="muted" style="margin-bottom:4px;">כל ק"מ מעבר לסף מתווסף לעלות בנוסף לחישוב הרגיל, לפי התעריף הנוסף שמוגדר כאן. לדוגמה: מרחק 15 ק"מ עם סף 10 — מתווספים 5 ק"מ × התעריף הנוסף.</div>
       <button class="btn" onclick="saveBaseSettings()">💾 שמור תעריפים</button>
       <div class="muted" id="baseSaveMsg"></div>
     </div>
@@ -261,6 +266,8 @@ function loadSettings(){
     rateKm: 2.5,
     rateMin: 0.8,
     base: 15,
+    extraKmRate: 0,
+    extraKmThreshold: 10,
     presets: [
       {id:'night', name:'שעות לילה', percent:20},
       {id:'rush', name:'שעות עומס', percent:15}
@@ -307,6 +314,8 @@ function fillSettingsForm(){
   document.getElementById('setRateKm').value = settings.rateKm;
   document.getElementById('setRateMin').value = settings.rateMin;
   document.getElementById('setBase').value = settings.base;
+  document.getElementById('setExtraKmRate').value = settings.extraKmRate;
+  document.getElementById('setExtraKmThreshold').value = settings.extraKmThreshold;
   document.getElementById('manualPercentInput').value = settings.manualPercent || '';
   renderPresetsList();
   renderPlacesList();
@@ -318,6 +327,8 @@ function saveBaseSettings(){
   settings.rateKm = parseFloat(document.getElementById('setRateKm').value) || 0;
   settings.rateMin = parseFloat(document.getElementById('setRateMin').value) || 0;
   settings.base = parseFloat(document.getElementById('setBase').value) || 0;
+  settings.extraKmRate = parseFloat(document.getElementById('setExtraKmRate').value) || 0;
+  settings.extraKmThreshold = parseFloat(document.getElementById('setExtraKmThreshold').value) || 0;
   persistSettings();
   const msg = document.getElementById('baseSaveMsg');
   msg.textContent = 'נשמר ✔';
@@ -676,7 +687,9 @@ function calculateTrip(){
     const percent = getActivePercent();
     const effRateKm = settings.rateKm * (1 + percent/100);
     const effRateMin = settings.rateMin * (1 + percent/100);
-    const cost = distanceKm*effRateKm + durationMin*effRateMin + settings.base;
+    const effExtraKmRate = (settings.extraKmRate || 0) * (1 + percent/100);
+    const extraKm = Math.max(0, distanceKm - (settings.extraKmThreshold || 0));
+    const cost = distanceKm*effRateKm + durationMin*effRateMin + settings.base + extraKm*effExtraKmRate;
 
     document.getElementById('resultAmount').textContent = cost.toFixed(2) + ' ₪';
     document.getElementById('resultSub').textContent =
