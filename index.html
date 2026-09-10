@@ -86,12 +86,14 @@
 
   .addr-field .row{ align-items:stretch; }
   .addr-field input[type=text]{ flex:1; }
+  .addr-actions{ display:flex; gap:8px; margin-top:8px; }
   .icon-btn{
     flex:0 0 auto; width:42px; height:42px; margin-top:0;
     display:flex; align-items:center; justify-content:center;
     background:var(--card2); border:1px solid var(--border); border-radius:10px;
     color:var(--text); font-size:17px; cursor:pointer; padding:0;
   }
+  .icon-btn.small{ width:32px; height:32px; font-size:13px; border-radius:8px; }
   .icon-btn.listening{ background:var(--danger); color:#fff; animation:pulse 1s infinite; }
   @keyframes pulse{ 0%{opacity:1;} 50%{opacity:.55;} 100%{opacity:1;} }
 
@@ -146,11 +148,11 @@
 
     <div class="card addr-field">
       <h2>נקודת מוצא</h2>
-      <div class="row">
-        <input type="text" id="originInput" placeholder="הקלד כתובת...">
-        <button class="icon-btn" data-mic-for="originInput" title="הכתבה קולית">🎤</button>
-        <button class="icon-btn" data-pick-for="originInput" title="בחר ממקום שמור">📂</button>
-        <button class="icon-btn" data-save-for="originInput" title="שמור כמקום קבוע">💾</button>
+      <input type="text" id="originInput" placeholder="הקלד כתובת...">
+      <div class="addr-actions">
+        <button class="icon-btn small" data-mic-for="originInput" title="הכתבה קולית">🎤</button>
+        <button class="icon-btn small" data-pick-for="originInput" title="בחר ממקום שמור">📂</button>
+        <button class="icon-btn small" data-save-for="originInput" title="שמור כמקום קבוע">💾</button>
       </div>
       <button class="btn secondary small" onclick="useMyLocation()">📍 השתמש במיקום שלי</button>
       <div class="muted" id="originStatus"></div>
@@ -158,11 +160,11 @@
 
     <div class="card addr-field">
       <h2>יעד</h2>
-      <div class="row">
-        <input type="text" id="destInput" placeholder="הקלד כתובת...">
-        <button class="icon-btn" data-mic-for="destInput" title="הכתבה קולית">🎤</button>
-        <button class="icon-btn" data-pick-for="destInput" title="בחר ממקום שמור">📂</button>
-        <button class="icon-btn" data-save-for="destInput" title="שמור כמקום קבוע">💾</button>
+      <input type="text" id="destInput" placeholder="הקלד כתובת...">
+      <div class="addr-actions">
+        <button class="icon-btn small" data-mic-for="destInput" title="הכתבה קולית">🎤</button>
+        <button class="icon-btn small" data-pick-for="destInput" title="בחר ממקום שמור">📂</button>
+        <button class="icon-btn small" data-save-for="destInput" title="שמור כמקום קבוע">💾</button>
       </div>
     </div>
 
@@ -698,11 +700,11 @@ function addStopRow(){
   row.className='stop-row addr-field';
   row.id = 'row_'+id;
   row.innerHTML = `
-    <div class="row">
-      <input type="text" id="${id}" placeholder="כתובת נקודת עצירה...">
-      <button class="icon-btn" data-mic-for="${id}" title="הכתבה קולית">🎤</button>
-      <button class="icon-btn" data-pick-for="${id}" title="בחר ממקום שמור">📂</button>
-      <button class="icon-btn" data-save-for="${id}" title="שמור כמקום קבוע">💾</button>
+    <input type="text" id="${id}" placeholder="כתובת נקודת עצירה...">
+    <div class="addr-actions">
+      <button class="icon-btn small" data-mic-for="${id}" title="הכתבה קולית">🎤</button>
+      <button class="icon-btn small" data-pick-for="${id}" title="בחר ממקום שמור">📂</button>
+      <button class="icon-btn small" data-save-for="${id}" title="שמור כמקום קבוע">💾</button>
     </div>
     <button class="btn danger small" style="margin-top:6px;" onclick="removeStopRow('${id}')">מחק נקודת עצירה</button>
   `;
