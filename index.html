@@ -117,6 +117,21 @@
     padding:5px 12px; font-size:13px; cursor:pointer;
   }
   .place-chip:hover{ border-color:var(--accent); }
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.55);
+    display:flex; align-items:flex-end; justify-content:center;
+    z-index:50;
+  }
+  .modal-box{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:16px 16px 0 0; padding:18px 16px 24px;
+    width:100%; max-width:640px; max-height:85vh; overflow-y:auto;
+  }
+  .modal-header{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;
+  }
+  .modal-header h2{ margin:0; font-size:16px; color:var(--accent); }
 </style>
 </head>
 <body>
@@ -134,8 +149,6 @@
 
   <!-- ===================== מסך נסיעה ===================== -->
   <section id="screenTrip" class="screen active">
-
-    <div class="muted" style="margin-bottom:10px;">💡 טיפ: כדי להכתיב כתובת בקול, תלחץ על שדה הכתובת ואז על סמל המיקרופון שעל גבי המקלדת של הטלפון (לא כפתור בתוך האפליקציה).</div>
 
     <div class="card addr-field">
       <h2>נקודת מוצא</h2>
@@ -158,10 +171,7 @@
     </div>
 
     <div class="card">
-      <h2>נקודות עצירה (אופציונלי)</h2>
-      <div id="stopsContainer"></div>
-      <button class="btn secondary small" onclick="addStopRow()">➕ הוסף נקודת עצירה</button>
-      <div class="muted">הסכום הקבוע (מחיר בסיס) נספר פעם אחת בלבד, גם עם כמה עצירות. הסדר שבו מוזנות העצירות הוא סדר המסלול.</div>
+      <button class="btn secondary" style="width:100%;" id="stopsBtn" onclick="openStopsModal()">📍 נקודות עצירה</button>
     </div>
 
     <button class="btn" style="width:100%;font-size:17px;padding:14px;" onclick="calculateTrip()">חשב מסלול ועלות</button>
@@ -249,6 +259,20 @@
   </section>
 
 </main>
+
+<!-- ===================== חלון נקודות עצירה ===================== -->
+<div id="stopsModalOverlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this) closeStopsModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>נקודות עצירה (אופציונלי)</h2>
+      <button class="icon-btn" onclick="closeStopsModal()">✖</button>
+    </div>
+    <div id="stopsContainer"></div>
+    <button class="btn secondary small" onclick="addStopRow()">➕ הוסף נקודת עצירה</button>
+    <div class="muted" style="margin-top:10px;">הסכום הקבוע (מחיר בסיס) נספר פעם אחת בלבד, גם עם כמה עצירות. הסדר שבו מוזנות העצירות הוא סדר המסלול.</div>
+    <button class="btn" style="width:100%;margin-top:14px;" onclick="closeStopsModal()">סגור</button>
+  </div>
+</div>
 
 <!-- ===================== לוגיקה ===================== -->
 <script>
@@ -554,6 +578,24 @@ function initAddressFieldExtras(scopeEl){
 }
 
 /* ---------- נקודות עצירה ---------- */
+function openStopsModal(){
+  document.getElementById('stopsModalOverlay').style.display='flex';
+}
+function closeStopsModal(){
+  document.getElementById('stopsModalOverlay').style.display='none';
+  updateStopsButtonLabel();
+}
+function updateStopsButtonLabel(){
+  const count = document.querySelectorAll('#stopsContainer .stop-row').length;
+  const btn = document.getElementById('stopsBtn');
+  if(!btn) return;
+  btn.textContent = count>0 ? `📍 נקודות עצירה (${count})` : '📍 נקודות עצירה';
+}
+function removeStopRow(id){
+  const row = document.getElementById('row_'+id);
+  if(row) row.remove();
+  updateStopsButtonLabel();
+}
 function addStopRow(){
   stopCounter++;
   const id = 'stop'+stopCounter;
@@ -567,7 +609,7 @@ function addStopRow(){
       <button class="icon-btn" data-save-for="${id}" title="שמור כמקום קבוע">💾</button>
     </div>
     <div class="place-picker" data-chips-for="${id}"></div>
-    <button class="btn danger small" style="margin-top:6px;" onclick="document.getElementById('row_${id}').remove()">מחק נקודת עצירה</button>
+    <button class="btn danger small" style="margin-top:6px;" onclick="removeStopRow('${id}')">מחק נקודת עצירה</button>
   `;
   container.appendChild(row);
   initAddressFieldExtras(row);
@@ -575,6 +617,7 @@ function addStopRow(){
   if(window.google && google.maps && google.maps.places){
     new google.maps.places.Autocomplete(document.getElementById(id), {fields:['formatted_address','geometry']});
   }
+  updateStopsButtonLabel();
 }
 
 /* ---------- מיקום נוכחי ---------- */
@@ -614,6 +657,7 @@ function resetTripForm(){
   document.getElementById('originStatus').textContent = '';
   document.getElementById('tripError').textContent = '';
   document.getElementById('stopsContainer').innerHTML = '';
+  updateStopsButtonLabel();
   document.getElementById('resultBox').style.display = 'none';
   originPlace = null;
   if(directionsRenderer){
